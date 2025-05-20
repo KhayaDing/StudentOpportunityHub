@@ -162,8 +162,42 @@ export default function Dashboard() {
                           </div>
                         </>
                       ) : recommendedOpportunities?.length === 0 ? (
-                        <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-                          <p>No recommendations yet. Complete your profile to get matched!</p>
+                        <div className="p-6 text-center">
+                          <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-lg font-medium mb-1">No recommendations yet</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                            To get personalized recommendations:
+                          </p>
+                          <ul className="text-sm text-left mx-auto max-w-xs space-y-2 mb-4">
+                            <li className="flex items-center">
+                              <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 p-1 rounded-full mr-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                              Add at least 3 skills to your profile
+                            </li>
+                            <li className="flex items-center">
+                              <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 p-1 rounded-full mr-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                              Select your program and year of study
+                            </li>
+                            <li className="flex items-center">
+                              <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 p-1 rounded-full mr-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                              Upload your CV (optional but recommended)
+                            </li>
+                          </ul>
                         </div>
                       ) : (
                         recommendedOpportunities?.map((opportunity) => (

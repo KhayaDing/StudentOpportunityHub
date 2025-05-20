@@ -89,11 +89,9 @@ export default function Opportunities() {
         <h1 className="text-3xl font-bold tracking-tight">Opportunities</h1>
         
         {isEmployer && (
-          <Button asChild>
-            <Link href="/opportunities/create">
-              <a>Post New Opportunity</a>
-            </Link>
-          </Button>
+          <Link href="/opportunities/create">
+            <Button>Post New Opportunity</Button>
+          </Link>
         )}
       </div>
       
