@@ -1,0 +1,44 @@
+Build a full-stack internship and volunteering matching platform for students and local employers in Kimberley, South Africa.
+
+🔐 Authentication:
+- Email/password signup/login for Students, Employers, and Admins.
+- Password reset + email verification
+
+👩‍🎓 Student Features:
+- Create/edit profile: name, email, institution (SPU or TVET), program, year, skills (multi-select), optional CV upload
+- Browse verified opportunities: filter by category, location, deadline, remote/in-person
+- Apply to opportunities
+- Track applications: status (Pending, Accepted, Rejected)
+- Download experience certificate (PDF issued by Employer/Admin)
+- Save/bookmark opportunities
+- Hide/show profile visibility to employers
+
+🏢 Employer/NGO Features:
+- Create organization profile: name, contact, type, logo
+- Post new opportunities with fields: title, category, deadline, duration, location, remote/in-person, required skills, required program, preferred year
+- View applicants: accept/reject, mark as completed
+- Generate and issue certificates to students
+- Auto-matching: see a recommended list of students based on matching program, skills, and year
+- Contact matched students via system message or email
+
+🛡️ Admin Dashboard:
+- Approve new employers
+- Moderate listings (edit/delete)
+- View all users, applications, and stats (e.g., most active employers, top students)
+- Export user or listing data
+
+💡 Tech Stack:
+- Backend: Node.js or Flask
+- Frontend: React or Next.js
+- Database: PostgreSQL or MongoDB
+- Auth: Firebase Auth or JWT
+- File Uploads: Cloudinary or local storage for CVs
+- PDF generation: server-side PDF for certificates
+- Matching logic: tag-based keyword match on program, skills, year
+
+📱 Responsive Design:
+- Mobile-first UI
+- PWA support or WhatsApp alert integration option
+
+🎯 Core Goal:
+Build a secure, verified, and trusted local ecosystem to connect Kimberley students with credible opportunities in real time, with features that promote trust, safety, and efficient access to early work experience.
