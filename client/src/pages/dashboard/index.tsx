@@ -260,11 +260,17 @@ export default function Dashboard() {
                       )}
                       
                       <div className="px-6 py-4 text-center">
-                        <Button asChild>
-                          <Link href="/opportunities">
-                            <a>Browse All Opportunities</a>
-                          </Link>
-                        </Button>
+                        <Link href="/opportunities">
+                          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6">
+                            Browse All Opportunities
+                          </Button>
+                        </Link>
+                        {!recommendedOpportunities?.length && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                            We match you with the best roles based on your program, year, and skills.
+                            Stay updated by keeping your profile fresh!
+                          </p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
