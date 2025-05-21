@@ -34,3 +34,9 @@ waitForPort = 5000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[env]
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
+POSTGRES_USER = "postgres"
+POSTGRES_PASSWORD = "postgres"
+POSTGRES_DB = "postgres"
