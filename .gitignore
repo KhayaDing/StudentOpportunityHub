@@ -1,6 +1,62 @@
-node_modules
-dist
+# ## Node.js / Package Manager
+# Dependencies / Lock files (though package-lock.json or yarn.lock are often committed)
+/node_modules
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log* # If you ever use pnpm
+
+# ## Vite
+# Build output and cache
+/dist
+/.vite/
+vite-env.d.ts # TypeScript declaration file for Vite's env variables
+
+# ## Environment Variables (Crucial for Security)
+# Ignore all .env files
+.env
+.env.*
+# Except for an example file (if you have one)
+!.env.example
+
+# ## Build Output / Distribution (General)
+# Redundant if /dist is already covered by Vite section, but good general practice
+/build
+
+# ## Local Database Files
+# For SQLite or other local database instances
+dev.db
+dev.db-journal
+*.sqlite
+*.sqlite3
+
+# ## Logs (General)
+*.log
+
+# ## Operating System Specific Files
 .DS_Store
-server/public
-vite.config.ts.*
+Thumbs.db
+
+# ## IDE / Editor Specific Configuration
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+# JetBrains (IntelliJ, WebStorm, etc.)
+.idea/
+
+# ## TypeScript
+# TypeScript build info cache
+*.tsbuildinfo
+
+# ## Archives / Compressed Files
 *.tar.gz
+
+# ## Project Specific (if any from your initial list)
+# server/public (If this is a build output or user-uploaded content not for version control)
+# /server/public 
+
+# ## Replit Specific (if any artifacts remain)
+# .replit
+# replit.nix
