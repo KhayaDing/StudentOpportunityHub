@@ -274,12 +274,13 @@ export class DatabaseStorage implements IStorage {
       })
       .from(employerProfiles)
       .innerJoin(users, eq(employerProfiles.userId, users.id));
-    
+
+    let results;
     if (verified !== undefined) {
-      query = query.where(eq(employerProfiles.isVerified, verified));
+      results = await query.where(eq(employerProfiles.isVerified, verified));
+    } else {
+      results = await query;
     }
-    
-    const results = await query;
     
     return results.map(({ profile, user }) => ({
       ...profile,
@@ -316,7 +317,7 @@ export class DatabaseStorage implements IStorage {
 
   async addSkillsToStudent(studentProfileId: number, skillIds: number[]): Promise<void> {
     // Remove duplicates
-    const uniqueSkillIds = [...new Set(skillIds)];
+    const uniqueSkillIds = Array.from(new Set(skillIds));
     
     // Get existing skills for this student
     const existingSkills = await db
@@ -447,44 +448,53 @@ export class DatabaseStorage implements IStorage {
     
     if (filters) {
       if (filters.category) {
-        conditions.push(eq(opportunities.category, filters.category));
+        const cond = eq(opportunities.category, filters.category);
+        if (cond) conditions.push(cond);
       }
       
       if (filters.locationType) {
-        conditions.push(eq(opportunities.locationType, filters.locationType));
+        // Ensure the value is one of the allowed enum values
+        const allowedLocationTypes = ["remote", "in-person", "hybrid"] as const;
+        if (allowedLocationTypes.includes(filters.locationType as any)) {
+          const cond = eq(opportunities.locationType, filters.locationType as typeof allowedLocationTypes[number]);
+          if (cond) conditions.push(cond);
+        }
       }
       
       if (filters.isActive !== undefined) {
-        conditions.push(eq(opportunities.isActive, filters.isActive));
+        const cond = eq(opportunities.isActive, filters.isActive);
+        if (cond) conditions.push(cond);
       }
       
       if (filters.isVerified !== undefined) {
-        conditions.push(eq(opportunities.isVerified, filters.isVerified));
+        const cond = eq(opportunities.isVerified, filters.isVerified);
+        if (cond) conditions.push(cond);
       }
       
       if (filters.employerId) {
-        conditions.push(eq(opportunities.employerId, filters.employerId));
+        const cond = eq(opportunities.employerId, filters.employerId);
+        if (cond) conditions.push(cond);
       }
       
       if (filters.search) {
-        conditions.push(
-          or(
-            like(opportunities.title, `%${filters.search}%`),
-            like(opportunities.description, `%${filters.search}%`),
-            like(employerProfiles.companyName, `%${filters.search}%`)
-          )
+        const cond = or(
+          like(opportunities.title, `%${filters.search}%`),
+          like(opportunities.description, `%${filters.search}%`),
+          like(employerProfiles.companyName, `%${filters.search}%`)
         );
+        if (cond) conditions.push(cond);
       }
     }
     
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      const filteredQuery = query.where(and(...conditions));
+      query = filteredQuery;
     }
-    
+
     // Add order by most recent first
-    query = query.orderBy(desc(opportunities.createdAt));
-    
-    let results = await query;
+    // .orderBy() must be called after all .where() calls
+    // Now execute the query
+    let results: any[] = await query.orderBy(desc(opportunities.createdAt));
     
     // Filter by skills if needed
     if (filters?.skills && filters.skills.length > 0) {
@@ -564,7 +574,7 @@ export class DatabaseStorage implements IStorage {
       
       // Score by matching skills
       const opportunitySkillIds = opportunity.skills.map((s: Skill) => s.id);
-      const matchingSkills = opportunitySkillIds.filter(id => studentSkillIds.includes(id));
+      const matchingSkills = opportunitySkillIds.filter((id: number) => studentSkillIds.includes(id));
       score += matchingSkills.length * 2;
       
       // Score by matching program
@@ -597,7 +607,7 @@ export class DatabaseStorage implements IStorage {
 
   async addSkillsToOpportunity(opportunityId: number, skillIds: number[]): Promise<void> {
     // Remove duplicates
-    const uniqueSkillIds = [...new Set(skillIds)];
+    const uniqueSkillIds = Array.from(new Set(skillIds));
     
     // Get existing skills for this opportunity
     const existingSkills = await db
@@ -692,7 +702,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentApplications(studentId: number, status?: string): Promise<any[]> {
-    let query = db
+    const conditions = [eq(applications.studentId, studentId)];
+    if (status) {
+      conditions.push(eq(applications.status, status as any));
+    }
+
+    const query = db
       .select({
         application: applications,
         opportunity: opportunities,
@@ -701,17 +716,11 @@ export class DatabaseStorage implements IStorage {
       .from(applications)
       .innerJoin(opportunities, eq(applications.opportunityId, opportunities.id))
       .innerJoin(employerProfiles, eq(opportunities.employerId, employerProfiles.id))
-      .where(eq(applications.studentId, studentId));
-    
-    if (status) {
-      query = query.where(eq(applications.status, status as any));
-    }
-    
-    // Order by most recent first
-    query = query.orderBy(desc(applications.appliedAt));
-    
+      .where(and(...conditions))
+      .orderBy(desc(applications.appliedAt));
+
     const results = await query;
-    
+
     return results.map(r => ({
       ...r.application,
       opportunity: r.opportunity,
@@ -720,7 +729,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOpportunityApplications(opportunityId: number, status?: string): Promise<any[]> {
-    let query = db
+    const conditions = [eq(applications.opportunityId, opportunityId)];
+    if (status) {
+      conditions.push(eq(applications.status, status as any));
+    }
+
+    const query = db
       .select({
         application: applications,
         student: studentProfiles,
@@ -729,15 +743,9 @@ export class DatabaseStorage implements IStorage {
       .from(applications)
       .innerJoin(studentProfiles, eq(applications.studentId, studentProfiles.id))
       .innerJoin(users, eq(studentProfiles.userId, users.id))
-      .where(eq(applications.opportunityId, opportunityId));
-    
-    if (status) {
-      query = query.where(eq(applications.status, status as any));
-    }
-    
-    // Order by most recent first
-    query = query.orderBy(desc(applications.appliedAt));
-    
+      .where(and(...conditions))
+      .orderBy(desc(applications.appliedAt));
+
     const results = await query;
     
     return results.map(r => ({
@@ -828,7 +836,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Certificate operations
-  async createCertificate(certificateData: InsertCertificate): Promise<Certificate> {
+  async createCertificate(certificateId: string, p0: { pdfUrl: string; }, certificateData: InsertCertificate): Promise<Certificate> {
     // Generate UUID if not provided
     if (!certificateData.id) {
       certificateData.id = uuidv4();
@@ -876,27 +884,27 @@ export class DatabaseStorage implements IStorage {
   async getStats(): Promise<any> {
     const [userCounts] = await db
       .select({
-        students: count(users.id).filterWhere(eq(users.role, 'student')),
-        employers: count(users.id).filterWhere(eq(users.role, 'employer')),
-        admins: count(users.id).filterWhere(eq(users.role, 'admin')),
+        students: sql<number>`count(*) FILTER (WHERE ${users.role} = 'student')`.as('students'),
+        employers: sql<number>`count(*) FILTER (WHERE ${users.role} = 'employer')`.as('employers'),
+        admins: sql<number>`count(*) FILTER (WHERE ${users.role} = 'admin')`.as('admins'),
       })
       .from(users);
     
     const [opportunityCounts] = await db
       .select({
         total: count(opportunities.id),
-        active: count(opportunities.id).filterWhere(eq(opportunities.isActive, true)),
-        verified: count(opportunities.id).filterWhere(eq(opportunities.isVerified, true)),
+        active: sql<number>`count(*) FILTER (WHERE ${opportunities.isActive} = true)`.as('active'),
+        verified: sql<number>`count(*) FILTER (WHERE ${opportunities.isVerified} = true)`.as('verified'),
       })
       .from(opportunities);
     
     const [applicationCounts] = await db
       .select({
         total: count(applications.id),
-        pending: count(applications.id).filterWhere(eq(applications.status, 'pending')),
-        accepted: count(applications.id).filterWhere(eq(applications.status, 'accepted')),
-        rejected: count(applications.id).filterWhere(eq(applications.status, 'rejected')),
-        completed: count(applications.id).filterWhere(eq(applications.status, 'completed')),
+        pending: sql<number>`count(*) FILTER (WHERE ${applications.status} = 'pending')`.as('pending'),
+        accepted: sql<number>`count(*) FILTER (WHERE ${applications.status} = 'accepted')`.as('accepted'),
+        rejected: sql<number>`count(*) FILTER (WHERE ${applications.status} = 'rejected')`.as('rejected'),
+        completed: sql<number>`count(*) FILTER (WHERE ${applications.status} = 'completed')`.as('completed'),
       })
       .from(applications);
     

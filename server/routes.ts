@@ -13,8 +13,12 @@ import {
   insertEmployerProfileSchema,
   insertOpportunitySchema,
   insertApplicationSchema,
-  insertCertificateSchema
+  insertCertificateSchema,
+  employerProfiles,
+  users
 } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 
 // Configure multer for file uploads
 const storage_dir = path.join(process.cwd(), 'uploads');
@@ -100,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/students/profile', requireAuth, requireRole(['student']), async (req: Request, res: Response) => {
     try {
       const userId = req.session.userId!;
-      const profile = await storage.getStudentWithSkills(userId);
+      const profile = await storage.getStudentWithSkills(Number(userId));
       
       if (!profile) {
         return res.status(404).json({ message: 'Student profile not found' });
@@ -132,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update profile
-      const updatedProfile = await storage.updateStudentProfile(userId, data);
+      const updatedProfile = await storage.updateStudentProfile(Number(userId), data);
       
       if (!updatedProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
@@ -144,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get updated profile with skills
-      const profile = await storage.getStudentWithSkills(userId);
+      const profile = await storage.getStudentWithSkills(Number(userId));
       
       res.status(200).json(profile);
     } catch (error) {
@@ -163,14 +167,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid skill data' });
       }
       
-      const profile = await storage.getStudentProfile(userId);
+      const profile = await storage.getStudentProfile(Number(userId));
       if (!profile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
       
       await storage.addSkillsToStudent(profile.id, skillIds);
       
-      const updatedProfile = await storage.getStudentWithSkills(userId);
+      const updatedProfile = await storage.getStudentWithSkills(Number(userId));
       res.status(200).json(updatedProfile);
     } catch (error) {
       console.error('Error adding skills:', error);
@@ -187,14 +191,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid skill ID' });
       }
       
-      const profile = await storage.getStudentProfile(userId);
+      const profile = await storage.getStudentProfile(Number(userId));
       if (!profile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
       
       await storage.removeSkillFromStudent(profile.id, skillId);
       
-      const updatedProfile = await storage.getStudentWithSkills(userId);
+      const updatedProfile = await storage.getStudentWithSkills(Number(userId));
       res.status(200).json(updatedProfile);
     } catch (error) {
       console.error('Error removing skill:', error);
@@ -206,13 +210,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/employers/profile', requireAuth, requireRole(['employer']), async (req: Request, res: Response) => {
     try {
       const userId = req.session.userId!;
-      const profile = await storage.getEmployerProfile(userId);
+      const profile = await storage.getEmployerProfile(Number(userId));
       
       if (!profile) {
         return res.status(404).json({ message: 'Employer profile not found' });
       }
       
-      const user = await storage.getUser(userId);
+      const user = await storage.getUser(Number(userId));
       
       res.status(200).json({
         ...profile,
@@ -245,13 +249,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update profile
-      const updatedProfile = await storage.updateEmployerProfile(userId, data);
+      const updatedProfile = await storage.updateEmployerProfile(Number(userId), data);
       
       if (!updatedProfile) {
         return res.status(404).json({ message: 'Employer profile not found' });
       }
       
-      const user = await storage.getUser(userId);
+      const user = await storage.getUser(Number(userId));
       
       res.status(200).json({
         ...updatedProfile,
@@ -288,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // For employer, show their own opportunities regardless of active/verified status
       if (req.session.userId && req.session.role === 'employer') {
-        const employerProfile = await storage.getEmployerProfile(req.session.userId);
+        const employerProfile = await storage.getEmployerProfile(Number(req.session.userId));
         if (employerProfile) {
           filters.employerId = employerProfile.id;
           // Allow employers to see all their opportunities
@@ -318,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       
-      const studentProfile = await storage.getStudentProfile(userId);
+      const studentProfile = await storage.getStudentProfile(Number(userId));
       if (!studentProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
@@ -347,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if the student has saved this opportunity
       if (req.session.userId && req.session.role === 'student') {
-        const studentProfile = await storage.getStudentProfile(req.session.userId);
+        const studentProfile = await storage.getStudentProfile(Number(req.session.userId));
         if (studentProfile) {
           const savedOpportunities = await storage.getSavedOpportunities(studentProfile.id);
           opportunity.isSaved = savedOpportunities.some(o => o.id === opportunity.id);
@@ -377,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get employer profile
-      const employerProfile = await storage.getEmployerProfile(userId);
+      const employerProfile = await storage.getEmployerProfile(Number(userId));
       if (!employerProfile) {
         return res.status(404).json({ message: 'Employer profile not found' });
       }
@@ -428,7 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify permissions
       if (req.session.role === 'employer') {
         // Employer can only update their own opportunities
-        const employerProfile = await storage.getEmployerProfile(userId);
+        const employerProfile = await storage.getEmployerProfile(Number(userId));
         if (!employerProfile || opportunity.employerId !== employerProfile.id) {
           return res.status(403).json({ message: 'You are not authorized to update this opportunity' });
         }
@@ -475,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify permissions
       if (req.session.role === 'employer') {
         // Employer can only delete their own opportunities
-        const employerProfile = await storage.getEmployerProfile(userId);
+        const employerProfile = await storage.getEmployerProfile(Number(userId));
         if (!employerProfile || opportunity.employerId !== employerProfile.id) {
           return res.status(403).json({ message: 'You are not authorized to delete this opportunity' });
         }
@@ -505,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get student profile
-      const studentProfile = await storage.getStudentProfile(userId);
+      const studentProfile = await storage.getStudentProfile(Number(userId));
       if (!studentProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
@@ -546,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       
       // Get student profile
-      const studentProfile = await storage.getStudentProfile(userId);
+      const studentProfile = await storage.getStudentProfile(Number(userId));
       if (!studentProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
@@ -582,7 +586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify permissions
       if (req.session.role === 'employer') {
         // Employer can only view applications for their opportunities
-        const employerProfile = await storage.getEmployerProfile(userId);
+        const employerProfile = await storage.getEmployerProfile(Number(userId));
         if (!employerProfile || opportunity.employerId !== employerProfile.id) {
           return res.status(403).json({ message: 'You are not authorized to view these applications' });
         }
@@ -621,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify permissions
       if (req.session.role === 'employer') {
         // Employer can only update applications for their opportunities
-        const employerProfile = await storage.getEmployerProfile(userId);
+        const employerProfile = await storage.getEmployerProfile(Number(userId));
         if (!employerProfile || application.opportunity.employerId !== employerProfile.id) {
           return res.status(403).json({ message: 'You are not authorized to update this application' });
         }
@@ -635,7 +639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else if (req.session.role === 'student') {
         // Students can only withdraw their own applications
-        const studentProfile = await storage.getStudentProfile(userId);
+        const studentProfile = await storage.getStudentProfile(Number(userId));
         if (!studentProfile || application.studentId !== studentProfile.id) {
           return res.status(403).json({ message: 'You are not authorized to update this application' });
         }
@@ -670,7 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get student profile
-      const studentProfile = await storage.getStudentProfile(userId);
+      const studentProfile = await storage.getStudentProfile(Number(userId));
       if (!studentProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
@@ -701,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get student profile
-      const studentProfile = await storage.getStudentProfile(userId);
+      const studentProfile = await storage.getStudentProfile(Number(userId));
       if (!studentProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
@@ -721,7 +725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       
       // Get student profile
-      const studentProfile = await storage.getStudentProfile(userId);
+      const studentProfile = await storage.getStudentProfile(Number(userId));
       if (!studentProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
@@ -749,7 +753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If employer, verify they own the application
       if (req.session.role === 'employer') {
-        const employerProfile = await storage.getEmployerProfile(userId);
+        const employerProfile = await storage.getEmployerProfile(Number(userId));
         if (!employerProfile) {
           return res.status(404).json({ message: 'Employer profile not found' });
         }
@@ -771,24 +775,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Create certificate
-      const certificate = await storage.createCertificate(validation.data);
-      
+      // Generate a certificate ID
+      const certificateId = uuidv4();
+
+      // Create certificate (without pdfUrl first)
+      const certificate = await storage.createCertificate(
+        certificateId,
+        { pdfUrl: '' },
+        { ...validation.data, id: certificateId }
+      );
+
       // Generate PDF
       const pdfBuffer = await generateCertificatePDF(certificate);
-      
+
       // Save PDF to file
       const pdfFilename = `certificate_${certificate.id}.pdf`;
       const pdfPath = path.join(storage_dir, pdfFilename);
       await fs.writeFile(pdfPath, pdfBuffer);
-      
+
       // Update certificate with PDF URL
       const pdfUrl = `/uploads/${pdfFilename}`;
-      await storage.updateCertificate(certificate.id, { pdfUrl });
-      
+      await storage.createCertificate(certificate.id, { pdfUrl }, { ...validation.data, id: certificate.id });
+
       // Get updated certificate
       const updatedCertificate = await storage.getCertificate(certificate.id);
-      
+
       res.status(201).json(updatedCertificate);
     } catch (error) {
       console.error('Error creating certificate:', error);
@@ -801,7 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       
       // Get student profile
-      const studentProfile = await storage.getStudentProfile(userId);
+      const studentProfile = await storage.getStudentProfile(Number(userId));
       if (!studentProfile) {
         return res.status(404).json({ message: 'Student profile not found' });
       }
@@ -831,13 +842,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session.role !== 'admin') {
         if (req.session.role === 'student') {
           // Students can only view their own certificates
-          const studentProfile = await storage.getStudentProfile(req.session.userId!);
+          const studentProfile = await storage.getStudentProfile(Number(req.session.userId!));
           if (!studentProfile || certificate.studentId !== studentProfile.id) {
             return res.status(403).json({ message: 'You are not authorized to view this certificate' });
           }
         } else if (req.session.role === 'employer') {
           // Employers can only view certificates they issued
-          const employerProfile = await storage.getEmployerProfile(req.session.userId!);
+          const employerProfile = await storage.getEmployerProfile(Number(req.session.userId!));
           if (!employerProfile || certificate.employerId !== employerProfile.id) {
             return res.status(403).json({ message: 'You are not authorized to view this certificate' });
           }

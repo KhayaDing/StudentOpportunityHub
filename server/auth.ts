@@ -5,6 +5,14 @@ import session from 'express-session';
 import MemoryStore from 'memorystore';
 import { z } from 'zod';
 
+// Extend express-session types to include userId and role
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+    role?: string;
+  }
+}
+
 // Define session storage
 const MemoryStoreSession = MemoryStore(session);
 
@@ -70,7 +78,7 @@ export const login = async (req: Request, res: Response) => {
     }
     
     // Create session
-    req.session.userId = user.id;
+    req.session.userId = String(user.id);
     req.session.role = user.role;
     
     // Return user info (without password)
@@ -133,7 +141,7 @@ export const register = async (req: Request, res: Response) => {
     
     // Create session if student (auto-login)
     if (role === 'student') {
-      req.session.userId = user.id;
+      req.session.userId = String(user.id);
       req.session.role = user.role;
     }
     
@@ -171,7 +179,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
-    const user = await storage.getUser(userId);
+    const user = await storage.getUser(Number(userId));
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -179,7 +187,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     // Get profile based on role
     let profile;
     if (user.role === 'student') {
-      profile = await storage.getStudentWithSkills(userId);
+      profile = await storage.getStudentWithSkills(Number(userId));
     } else if (user.role === 'employer') {
       profile = await storage.getEmployerProfile(userId);
     }
